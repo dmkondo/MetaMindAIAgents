@@ -1,7 +1,7 @@
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
-from notas_fiscais_db import NotasFiscaisTesteDB
+from notas_fiscais_teste_db import NotasFiscaisTesteDB
 
 load_dotenv()
 
