@@ -1,3 +1,4 @@
+from notas_fiscais_teste_db import NotasFiscaisTesteDB
 from pydantic_ai import Agent
 from pydantic_ai.models.gemini import GeminiModel
 from pydantic_ai.providers.google_gla import GoogleGLAProvider
@@ -33,10 +34,23 @@ SELECT * FROM notas_fiscais_teste WHERE id % 2 != 0;
 
 b=True
 
+# Instanciar controlador do banco de dados
+db = NotasFiscaisTesteDB()
+
 while b==True:
-    consulta = input('Informe o que deseja consultar: ')
+    consulta = input('### Informe o que deseja consultar: ')
     if consulta=='.quit':
         b=False
     else:
         result = agent.run_sync(consulta)
-        print(result.output)
+        if type(result.output) is str and result.output!='' and str(result.output).startswith('SELECT'):
+            print(result.output)
+            registros = db.consultar_notas_sql(result.output)
+            print("### Registros identificados:")
+            for registro in registros:
+                print(registro)
+            print('\n\n\n')
+        else:
+            print('   ### Comando não identificado.\n\n\n')
+
+db.fechar_conexao()
