@@ -43,8 +43,8 @@ while b==True:
         b=False
     else:
         result = agent.run_sync(consulta)
+        print(result.output)
         if type(result.output) is str and result.output!='' and str(result.output).startswith('SELECT'):
-            print(result.output)
             registros = db.consultar_notas_sql(result.output)
             print("### Registros identificados:")
             for registro in registros:
