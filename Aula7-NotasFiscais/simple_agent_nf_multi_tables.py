@@ -1,8 +1,12 @@
 import os
 import zipfile
 import sqlite3
+from dataclasses import dataclass, field
+
 import pandas as pd
 from datetime import date
+
+from pandas.io.formats.format import return_docstring
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext, format_as_xml
 from typing import List, Dict
@@ -109,7 +113,7 @@ def extrair_zip(file):
               f'   @@@ {type(ex)}\n'
               f'   @@@{ex=}')
 
-# Processamento do CSV brasileiro
+# Processamento do CSV
 def processar_csv(csv_path: str) -> pd.DataFrame:
     try:
         return pd.read_csv(
@@ -251,9 +255,166 @@ def inicializar_sistema(fileZip: str):
 
     return agente
 
+@dataclass
+class CompressedFile:
+    zip_file_name:str
+
+@dataclass
+class SQLQuery:
+    query:str
+
+@dataclass
+class FileCSVList:
+    csvlist: List[str] = field(default_factory=list)
+
+class CSVFileListOutput(BaseModel):
+    output_message: str
+    filelist: List[str]
+
+def agente_extracao(zip_file: str) -> CSVFileListOutput:
+    model = GeminiModel(
+        'gemini-1.5-flash', provider=GoogleGLAProvider(api_key=os.environ.get('gem_key'))
+    )
+
+    agente = Agent(
+        model,
+        deps_type=str,
+        retries=1,
+        output_type=CSVFileListOutput,
+        system_prompt=("Você é um analista de suporte que receberá o endereço de um arquivo do tipo .ZIP "
+                       "e utilizará a função 'tool_extrair_zip' informando como parâmetro o nome do arquivo a ser descompactado "
+                       "e retornará como resultado a lista de arquivos descompactados."
+       )
+    )
+
+    @agente.tool
+    def tool_extrair_zip(ctx: RunContext[str], filename:str) -> List[str]:
+        try:
+            print(f'   tool_extrair_zip: {filename}')
+            with zipfile.ZipFile(filename, 'r') as zip_ref:
+                zip_ref.extractall(DIR_EXTRACAO)
+
+            # Encontra o primeiro arquivo CSV extraído
+            filelist = []
+            for arquivo in os.listdir(DIR_EXTRACAO):
+                if arquivo.endswith('.csv'):
+                    filelist.append(f'{DIR_EXTRACAO}/{arquivo}')
+            return filelist
+        except Exception as ex:
+            print(f'@@@ Error ao extrair arquivo ZIP.\n'
+                  f'   @@@ {type(ex)}\n'
+                  f'   @@@{ex=}')
+
+    retorno_ext = agente.run_sync(zip_file, deps=zip_file)
+    return retorno_ext.output
+
+def agente_load(listCSV: List[str]):
+    model = GeminiModel(
+        'gemini-1.5-flash', provider=GoogleGLAProvider(api_key=os.environ.get('gem_key'))
+    )
+
+    agente = Agent(
+        model,
+        retries=1,
+        deps_type=FileCSVList,
+        system_prompt=("Você é um analista de suporte que receberá uma lista de arquivos "
+                       " e utilizará a função 'tool_processar_csv' para processar os arquivos .csv recebidos. "
+                       "Esta função é utilizada para extrair as informações dos arquivos .csv e inserir no banco de dados."
+                       )
+    )
+
+    @agente.tool
+    def tool_processar_csv(ctx: RunContext[FileCSVList]):
+        try:
+            for csv_path in ctx.deps.csvlist:
+                print(f'   tool_processar_csv file a processar: {csv_path}')
+                df = processar_csv(csv_path)
+                if str(csv_path).endswith('Cabecalho.csv'):
+                    insere_cabecalhos_banco(df)
+                if str(csv_path).endswith('Itens.csv'):
+                    insere_itens_banco(df)
+
+            return 'Processamento concluído com sucesso!'
+        except Exception as ex:
+            print(f'@@@ Error ao extrair arquivo ZIP.\n'
+                  f'   @@@ {type(ex)}\n'
+                  f'   @@@{ex=}')
+
+    @agente.instructions
+    async def get_file_list(ctx: RunContext[FileCSVList]) -> str:
+        return str(ctx.deps.csvlist)
+
+    deps = FileCSVList(csvlist=listCSV)
+    retorno_load = agente.run_sync('Processar esta lista de arquivos.', deps=deps)
+    print(retorno_load.output)
+
+def agente_consulta_query() -> Agent:
+    model = GeminiModel(
+        'gemini-1.5-flash', provider=GoogleGLAProvider(api_key=os.environ.get('gem_key'))
+    )
+
+    agente = Agent(
+        model,
+        retries=1,
+        deps_type=str,
+        system_prompt=f"""### PAPEL: Especialista em SQLite3.
+            ### AÇÃO: Crie a query, execute a consulta através da função 'executar_consulta' enviando como parâmetro apenas a query SQL a ser executada e retorne como resultado apenas os registros em formato markdown.
+            ### ESTRUTURA DA TABELA:
+            {DB_SCHEMA}
+            ### DATA ATUAL: {date.today()}
+            ### EXEMPLOS:
+            {format_as_xml(SQL_EXEMPLOS)}
+            ### PONTOS DE ATENÇÃO
+            - Ao acionar a função 'executar_consulta', envie apenas a query SQL a ser executada, sem nenhum texto ou caractér adicional.
+            - Caso seja solicitado algo fora do seu contexto retorne vazio ('').
+            - Utilize alias para nomear a coluna retornada conforme o contexto dela.
+            - Para procurar conteúdo de texto utilizar sempre a função UPPER para garantir que não tenha problemas decorrentes de consistência de dados.
+            """
+    )
+
+    @agente.tool
+    def tool_executar_consulta(ctx: RunContext[SQLQuery], query: str) -> List[Dict]:
+        try:
+            print(f'SQL gerado: {query}')
+            conn = sqlite3.connect(BANCO_DADOS)
+            cursor = conn.execute(query)
+            resultados = cursor.fetchall()
+            colunas = [desc[0] for desc in cursor.description]
+            return [dict(zip(colunas, linha)) for linha in resultados]
+        except Exception as ex:
+            print(f'@@@ Error ao executar consulta.\n'
+                  f'   @@@ {type(ex)}\n'
+                  f'   @@@{ex=}')
+        finally:
+            conn.close()
+
+    return agente
+
 # Interface de consulta
-def main():
-    agente = inicializar_sistema(ARQUIVO_ZIP)
+# def main():
+#     agente = inicializar_sistema(ARQUIVO_ZIP)
+#
+#     while True:
+#         try:
+#             pergunta = input("\nDigite sua consulta (ou '.quit'): ")
+#             if pergunta.lower() == '.quit':
+#                 break
+#
+#             resultado = agente.run_sync(pergunta, deps=ARQUIVO_ZIP)
+#             print(resultado.output)
+#
+#         except Exception as ex:
+#             print(f'@@@ Error ao executar main.\n'
+#               f'   @@@ {type(ex)}\n'
+#               f'   @@@{ex=}')
+
+# Interface de consulta
+def main_with_agents():
+    retorno_extracao = agente_extracao(ARQUIVO_ZIP)
+
+    agente_load(retorno_extracao.filelist)
+
+    agente = agente_consulta_query()
 
     while True:
         try:
@@ -261,7 +422,8 @@ def main():
             if pergunta.lower() == '.quit':
                 break
 
-            resultado = agente.run_sync(pergunta, deps=ARQUIVO_ZIP)
+            sqlQuery = SQLQuery(query=pergunta)
+            resultado = agente.run_sync(pergunta, deps=sqlQuery)
             print(resultado.output)
 
         except Exception as ex:
@@ -269,6 +431,5 @@ def main():
               f'   @@@ {type(ex)}\n'
               f'   @@@{ex=}')
 
-
 if __name__ == "__main__":
-    main()
+    main_with_agents()
