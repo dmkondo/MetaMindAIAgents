@@ -76,13 +76,15 @@ def create_table(db_conn, arquivo_xlsx, nome_tabela):
         db_conn.execute(insert_sql, tuple(row))
 
     db_conn.commit()
-
+    return create_table_sql
 
 def main():
     extract_file(ARQUIVO_ZIP)
     db_nome = os.environ.get('db_name')
 
     conn = sqlite3.connect(db_nome)
+
+    lista_tabelas = []
 
     for arquivo in os.listdir(DIR_EXTRACAO):
         if arquivo.endswith('.xlsx'):
@@ -92,13 +94,14 @@ def main():
 
             if nome_tabela:
                 print(f"Processando {arquivo} -> Tabela: {nome_tabela}")
-                create_table(conn, caminho_arquivo, nome_tabela)
+                script_tabela = create_table(conn, caminho_arquivo, nome_tabela)
+                lista_tabelas.append(script_tabela)
             else:
                 print(f"Nome inválido para {arquivo}, pulando.")
 
     conn.close()
     print("Processamento concluído.")
-
+    print(lista_tabelas)
 
 if __name__ == "__main__":
     load_dotenv()
