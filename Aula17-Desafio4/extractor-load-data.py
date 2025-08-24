@@ -1,9 +1,12 @@
 import os
 import zipfile
 import sqlite3
+from idlelib.iomenu import encoding
+
 import pandas as pd
 import re
 import unicodedata
+import datetime
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 from pydantic import BaseModel
@@ -52,6 +55,7 @@ def extract_file(file):
               f'   @@@{ex=}')
 
 def sanitize_name(nome):
+    nome = nome.strip()
     nome = str(nome).replace(' ', '_')
     nome = ''.join(c for c in unicodedata.normalize('NFD', nome) if unicodedata.category(c) != 'Mn')
     nome = re.sub(r'[^a-zA-Z0-9_]', '', nome)
@@ -102,10 +106,7 @@ def agente_consulta_query() -> Agent:
         retries=1,
         deps_type=str,
         system_prompt=f"""### PAPEL: Especialista em SQLite3.
-            ### AÇÃO: Considerando as tabelas enviadas, crie uma query para consultar a lista de funcionários ativos conforme as regras detalhadas e execute a consulta através da tool 'executar_consulta' enviando como parâmetro apenas a query SQL a ser executada e retorne como resultado apenas os registros em formato markdown.
-            
-            ### ESTRUTURA DAS TABELAS:
-            {DB_SCHEMA}
+            ### AÇÃO: Considerando as tabelas enviadas, crie uma query para consultar a lista de colaboradores ativos para pagamento de vale refeição conforme as regras detalhadas e execute a consulta através da tool 'executar_consulta' enviando como parâmetro apenas a query SQL a ser executada e retorne como resultado o endereço do arquivo CSV gerado.
             
             ### RESPONSABILIDADE DE CADA TABELA:
             - ativos: Tabela com a lista de colaboradores ativos com matrícula, sindicato e situação.
@@ -118,13 +119,27 @@ def agente_consulta_query() -> Agent:
             - base_sindicato_x_valor: Tabela de valores diários de VR por sindicato.
             
             ### REGRAS DETALHADAS:
-            - Retorne todos os colaboradores ativos, apresentando matricula, empresa, titulo_do_cargo e sindicato.
+            - Retorne todos os colaboradores ativos, apresentando os campos:
+              -- matricula
+              -- empresa
+              -- titulo_do_cargo
+              -- sindicato
+              -- valor_diario_sindicato: valor apresentado conforme o estado no qual o sindicato seja referente. Relação de de-para para identificação do estado: quando o sindicato começar com "SINDPD SP" o estado será "São Paulo"; quando o sindicato começar com "SINDPPD RS" o estado será "Rio Grande do Sul"; quando o sindicato começar com "SITEPD PR" o estado será "Paraná"; quando o sindicato começar com "SINDPD RJ" o estado será "Rio de Janeiro";
+              -- dias_uteis: dias uteis conforme a base estipulada pelo sindicato.
+              -- qtde_dias_ferias: sub-query que, caso o colaborador esteja de férias com retorno anterior a 15/05, calcular a diferença em dias da data de retorno das férias até o dia 15/05).
+              -- qtde_dias_licenca: sub-query que, caso o colaborador esteja de licença com retorno anterior a 15/05, calcular a diferença em dias da data de retorno da licença até o dia 15/05.
             - Utilize a coluna [matricula] para efetuar o relacionamento entre as tabelas.
             - Desconsiderar os colaboradores que estão de férias.
-            - Desconsiderar os colaboradores que estão afastados.
+            - Desconsiderar os colaboradores que não apresentam sindicato.
+            - Desconsiderar os colaboradores que estão afastados (utilizar o campo unnamed_3 para avaliar os retornos de licença, caso o colaborador retorne de licença antes de 15/05 subtraia os dias em que estava de licença do dias_uteis).
+            - Desconsiderar os colaboradores que estão no exterior.
+            - Desconsiderar os colaboradores que são estagiários, aprendizes, diretores ou não tenha um título informado.
+            - Desconsiderar os colaboradores que foram desligados cuja data_demissao maior ou igual a 15/05 e comunicado_de_desligamento Ok.
+            - Identifique o [dias_uteis] através sindicado da tabela base_dias_uteis.
             
             ### INFORMAÇÕES IMPORTANTES
             - Ao acionar a tool 'executar_consulta', envie apenas a query SQL a ser executada, sem nenhum texto ou caractér adicional.
+            - A tool 'executar_consulta' retorna o endereço do arquivo CSV gerado.
             - Utilize alias para nomear a coluna retornada conforme o contexto dela.
             - Para procurar conteúdo de texto utilizar sempre a função UPPER para garantir que não tenha problemas decorrentes de consistência de dados.
             """
@@ -137,9 +152,12 @@ def agente_consulta_query() -> Agent:
             conn = sqlite3.connect(BANCO_DADOS)
             cursor = conn.execute(query)
             resultados = cursor.fetchall()
-            print(f'### Resultado: {resultados}\n\n')
+            # print(f'### Resultado: {resultados}\n\n')
             colunas = [desc[0] for desc in cursor.description]
-            return [dict(zip(colunas, linha)) for linha in resultados]
+            # return [dict(zip(colunas, linha)) for linha in resultados]
+            df = pd.DataFrame(resultados, columns=colunas)
+            df.to_csv(os.path.join(DIR_EXTRACAO, f'ListaAtivosVR_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv'), encoding='UTF-8', sep=';')
+            return resultados
         except Exception as ex:
             print(f'@@@ Error ao executar consulta.\n'
                   f'   @@@ {type(ex)}\n'
@@ -162,20 +180,20 @@ def main():
             nome_tabela = sanitize_name(nome_arquivo_sem_ext)
 
             if nome_tabela:
-                print(f"Processando {arquivo} -> Tabela: {nome_tabela}")
+                # print(f"Processando {arquivo} -> Tabela: {nome_tabela}")
                 script_tabela = create_table(conn, caminho_arquivo, nome_tabela)
                 lista_tabelas.append(script_tabela)
             else:
                 print(f"Nome inválido para {arquivo}, pulando.")
 
     conn.close()
-    print("*** Processamento concluído ***")
-    print(f'Tabelas Geradas: {lista_tabelas}\n\n\n')
+    print("*** Arquivo descompactado e disponibilizado em BD ***")
+    # print(f'Tabelas Geradas: {lista_tabelas}\n\n\n')
     DB_SCHEMA = lista_tabelas
 
     agente = agente_consulta_query()
     sqlQuery = SQLQuery(query='')
-    resultado = agente.run_sync('', deps=sqlQuery)
+    resultado = agente.run_sync(str(lista_tabelas), deps=sqlQuery)
     print(f'Resultado:\n {resultado.output}')
 
 if __name__ == "__main__":
