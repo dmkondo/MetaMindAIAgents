@@ -7,6 +7,7 @@ import pandas as pd
 import re
 import unicodedata
 import datetime
+import time
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 
@@ -16,7 +17,9 @@ from pydantic_ai import Agent, RunContext, format_as_xml
 from typing import List, Dict
 from dotenv import load_dotenv
 from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.models.mistral import MistralModel
 from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.providers.mistral import MistralProvider
 
 ARQUIVO_ZIP = "resources/Desafio 4 - Dados.zip"
 DIR_EXTRACAO = "resources/temp"
@@ -108,13 +111,15 @@ class XLSFileListOutput(BaseModel):
 
 class TableListOutput(BaseModel):
     output_message: str
-    tablelist: List[str]
+    sqlScriptlist: List[str]
 
 def agente_extracao(zip_file: str) -> XLSFileListOutput:
-    model = GoogleModel(
-        'gemini-2.0-flash', provider=GoogleProvider(api_key=os.environ.get('gem_key'))
+    # model = GoogleModel(
+    #     'gemini-2.0-flash', provider=GoogleProvider(api_key=os.environ.get('gem_key'))
+    # )
+    model = MistralModel(
+        model_name='mistral-small-latest', provider=MistralProvider(api_key=os.environ.get('mistral_key'))
     )
-
     agente = Agent(
         model,
         deps_type=str,
@@ -147,9 +152,13 @@ def agente_extracao(zip_file: str) -> XLSFileListOutput:
     retorno_ext = agente.run_sync(zip_file, deps=zip_file)
     return retorno_ext.output
 
-def agente_load(xlslist: List[str]) -> List[str]:
-    model = GoogleModel(
-        'gemini-2.0-flash', provider=GoogleProvider(api_key=os.environ.get('gem_key'))
+def agente_load(xlslist: str) -> List[str]:
+    # model = GoogleModel(
+    #     'gemini-2.0-flash', provider=GoogleProvider(api_key=os.environ.get('gem_key'))
+    # )
+
+    model = MistralModel(
+        model_name='mistral-small-latest', provider=MistralProvider(api_key=os.environ.get('mistral_key'))
     )
 
     agente = Agent(
@@ -159,10 +168,10 @@ def agente_load(xlslist: List[str]) -> List[str]:
         output_type=TableListOutput,
         system_prompt=(
             """### PAPEL: Você é um analista de suporte especializado em receber uma lista de planilhas, avaliar seu conteúdo e criar as tabelas em SQLite com a devida carga dos dados recebidos nas mesmas. 
-               ### OPBJETIVO: Utilizando apenas a lista de arquivos recebida, você deverá iterar por cada planilha XLS, pegar seu conteúdo através da tool 'get_file' e seguir as seguintes etapas: 
-                - Criar o script DDL em SQLite3 para criação da tabela seguindo os critérios listados abaixo e executar a criação utilizando a tool 'tool_executar_comando_sql'.
-                - Por cada linha apresentada na planilna, gerar o script de INSERT e executá-lo utilizando a tool 'tool_executar_comando_sql'.
-                - Ao executar todas as planilhas, retorne uma List[Str] contendo o script DDL de criação de todas as tabelas criadas.
+               ### OPBJETIVO: Utilizando apenas a lista de arquivos recebida, você deverá iterar por cada planilha XLS, pegar seu conteúdo através da tool 'get_file' (enviando apenas o endereço do arquivo a ser extraído) e seguir as seguintes etapas: 
+                - Criar o script DDL em SQLite3 para criação da tabela seguindo os critérios listados abaixo e adicioná-lo na lista de script de retorno.
+                - Por cada linha apresentada na planilna, gerar o script de INSERT e adicioná-lo na lista de script de retorno.
+                - Ao processar todos os registros da planilha, retorne a lista de scripts de retorno.
                ### CRITÉRIOS PARA NOMENCLATURA DAS TABELAS E COLUNAS:
                 - O nome da tabela deverá ser o nome do arquivo seguindo os demais critérios aqui estipulados.
                 - O nome de cada coluna deverá ser o nome apresentado na primeira linha seguindo os demais critérios aqui estipulados.
@@ -172,15 +181,18 @@ def agente_load(xlslist: List[str]) -> List[str]:
                 - Substitua os espaços entre as palavras por '_'.
                 - Para o arquivo 'Base dias uteis.xlsx', ignorar a primeira linha, obtendo o nome das colunas conforme o apresentado na segunda linha.
                 - Ignorar o arquivo 'VR MENSAL 05.2025.xlsx'. 
-               ### PONTOS DE ATENÇÃO
-                - Ao acionar a função 'tool_executar_comando_sql', envie apenas a query SQL a ser executada, sem nenhum texto ou caractere adicional.
-                - Poderá utilizar a tool 'tool_executar_consulta' para efetuar consultas e avaliar seus conteúdos.
+                - Caso a planilha 'Exterior.xlsx' contenha uma coluna sem nome, considerar na criação da tabela o nome da coluna como 'observacao'.
+                - Caso a planilha 'Afastamentos.xlsx' contenha uma coluna sem nome, considerar na criação da tabela o nome da coluna como 'observacao'.
+                - Para a planilha 'Afastamentos.xlsx', na criação da tabela adicionar a coluna 'data_retorno' e nos scripts de inserção considerar com a data identificada no final do texto da coluna 'observacao' caso a mesma inicie seu conteúdo com 'retorno'. Exemplo: Considerar a data 11/06/2025 quando na coluna 'observacao' estiver preenchido com o texto 'retorno de férias + licença em 11/06'.
+               ### INFORMAÇÕES IMPORTANTES:
+                - Para executar a tool 'get_file', enviar apenas o endereço do arquivo a ser processado sem a necessidade de utilizar aspas.
             """
                        )
     )
 
     @agente.tool
     def get_file(ctx: RunContext[str], filename:str) -> str:
+        print(f'get_file - filename: \n{filename}\n\n')
         for fileblack in BLACK_LIST:
             if str(filename).endswith(fileblack):
                 return
@@ -232,9 +244,12 @@ def agente_load(xlslist: List[str]) -> List[str]:
     async def get_file_list(ctx: RunContext[XLSFileList]) -> str:
         return str(ctx.deps.xlslist)
 
-    deps = XLSFileList(xlslist=xlslist)
+    list = []
+    list.append(xlslist)
+    deps = XLSFileList(xlslist=list)
     retorno_load = agente.run_sync('Processar esta lista de arquivos.', deps=deps)
     print(retorno_load.output)
+    return retorno_load.output.sqlScriptlist
 
 def agente_consulta_query() -> Agent:
     model = GoogleModel(
@@ -341,4 +356,9 @@ if __name__ == "__main__":
     # main()
     retorno_extracao = agente_extracao(ARQUIVO_ZIP)
 
-    retorno_load = agente_load(retorno_extracao.filelist)
+    lista_script_retorno = []
+    for file in retorno_extracao.filelist:
+        print(f'  Processando arquivo: {file}')
+        lista_script_retorno.append(agente_load(file))
+        time.sleep(2*60)
+    print(f'  Output from agente_load: \n{lista_script_retorno}')
