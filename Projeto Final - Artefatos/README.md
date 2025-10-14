@@ -33,7 +33,7 @@ http://127.0.0.1:8000/docs#/
 
 <div align="center">
 
-![](notas-fiscais/api.png)
+![](SourceCode/poc-fastapi-llm-ocr/notas-fiscais/api.png)
 
 </div>
 
@@ -43,9 +43,9 @@ http://127.0.0.1:8000/docs#/
 
 <div align="center">
 
-![](notas-fiscais/teste1.PNG)
+![](SourceCode/poc-fastapi-llm-ocr/notas-fiscais/teste1.PNG)
 
-![](notas-fiscais/teste1b.PNG)
+![](SourceCode/poc-fastapi-llm-ocr/notas-fiscais/teste1b.PNG)
 
 </div>
 
@@ -53,7 +53,7 @@ http://127.0.0.1:8000/docs#/
 
 <div align="center">
 
-![](notas-fiscais/nota1.PNG) 
+![](SourceCode/poc-fastapi-llm-ocr/notas-fiscais/nota1.PNG) 
 
 </div>
 
@@ -62,7 +62,7 @@ http://127.0.0.1:8000/docs#/
 
 Frontend utilizado na POC Fastapi com Gemini. Criado para o segundo trabalho do curso da I1A2 em Junho de 2025.
 
-<https://github.com/lyndontavares/poc-fastapi-llm-ocr>
+<https://github.com/dmkondo/MetaMindAIAgents/tree/main/Projeto%20Final%20-%20Artefatos/SourceCode/poc-fastapi-llm-ocr>
 
 ## Run
 
@@ -74,14 +74,14 @@ npm run start:dev
 
 ## Lista de Notas Fiscais
 
-![](assets/tela1.png)
+![](SourceCode/poc-fastapi-llm-ocr-frontend-react/assets/tela1.png)
 
 ## Adicionar Nota
 
-![](assets/tela2.png)
+![](SourceCode/poc-fastapi-llm-ocr-frontend-react/assets/tela2.png)
 
 ## Extração de dados
 
-![](assets/tela3.png)
+![](SourceCode/poc-fastapi-llm-ocr-frontend-react/assets/tela3.png)
 
 </div>
