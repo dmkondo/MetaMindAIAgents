@@ -25,3 +25,6 @@ npm run start:dev
 ![](assets/tela3.png)
 
 </div>
+
+## Licença
+Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](LICENSE).

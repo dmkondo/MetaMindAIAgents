@@ -56,3 +56,8 @@ http://127.0.0.1:8000/docs#/
 ![](notas-fiscais/nota1.PNG) 
 
 </div>
+
+
+
+## Licença
+Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](LICENSE).
