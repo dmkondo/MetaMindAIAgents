@@ -1,0 +1,108 @@
+{
+  "tarefas": [
+    {
+      "id": 1,
+      "cnpj": "9129292900022",
+      "data_emissao": "01/01/2025",
+      "valor_pago": 100,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78E",
+      "status": "PROCESSADO"
+    },
+    {
+      "id": 2,
+      "cnpj": "9129292900022",
+      "data_emissao": "02/01/2025",
+      "valor_pago": 200,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78F",
+      "status": "CHECKING"
+    },
+    {
+      "id": 3,
+      "cnpj": "9129292900022",
+      "data_emissao": "03/01/2025",
+      "valor_pago": 300,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78G",
+      "status": "CHECKING"
+    },
+    {
+      "id": 4,
+      "cnpj": "9129292900022",
+      "data_emissao": "04/01/2025",
+      "valor_pago": 400,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78H",
+      "status": "CHECKING"
+    },
+    {
+      "id": 5,
+      "cnpj": "9129292900022",
+      "data_emissao": "05/01/2025",
+      "valor_pago": 500,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78I",
+      "status": "CHECKING"
+    },
+    {
+      "id": 6,
+      "cnpj": "9129292900022",
+      "data_emissao": "06/01/2025",
+      "valor_pago": 600,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78J",
+      "status": "PROCESSADO"
+    },
+    {
+      "id": 7,
+      "cnpj": "9129292900022",
+      "data_emissao": "07/01/2025",
+      "valor_pago": 700,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78K",
+      "status": "PROCESSADO"
+    },
+    {
+      "id": 8,
+      "cnpj": "9129292900022",
+      "data_emissao": "08/01/2025",
+      "valor_pago": 800,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78L",
+      "status": "CHECKING"
+    },
+    {
+      "id": 9,
+      "cnpj": "9129292900022",
+      "data_emissao": "09/01/2025",
+      "valor_pago": 900,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78M",
+      "status": "PROCESSADO"
+    },
+    {
+      "id": 10,
+      "cnpj": "9129292900022",
+      "data_emissao": "10/01/2025",
+      "valor_pago": 1000,
+      "imagem_hash": "8Q7WE8QWE78QWE8QW78N",
+      "status": "PENDENTE"
+    },
+    {
+      "id": 1750031956984,
+      "cnpj": "",
+      "data_emissao": "",
+      "valor_pago": "",
+      "imagem_hash": "",
+      "status": "CHECKING",
+      "imagem": {
+        "path": "./nota1.PNG",
+        "relativePath": "./nota1.PNG"
+      }
+    },
+    {
+      "id": 1750031956975,
+      "cnpj": "",
+      "data_emissao": "",
+      "valor_pago": "",
+      "imagem_hash": "",
+      "status": "CHECKING",
+      "imagem": {
+        "path": "./nota1.PNG",
+        "relativePath": "./nota1.PNG"
+      }
+    }
+  ]
+}
