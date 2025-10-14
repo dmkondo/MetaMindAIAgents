@@ -57,6 +57,9 @@ http://127.0.0.1:8000/docs#/
 
 </div>
 
+## Licença
+Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo LICENSE na raiz do repositório.
+
 
 # poc-fastapi-llm-ocr-frontend-react
 
@@ -85,3 +88,6 @@ npm run start:dev
 ![](SourceCode/poc-fastapi-llm-ocr-frontend-react/assets/tela3.png)
 
 </div>
+
+## Licença
+Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo LICENSE na raiz do repositório.
