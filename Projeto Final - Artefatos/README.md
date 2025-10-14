@@ -65,7 +65,7 @@ Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, co
 
 Frontend utilizado na POC Fastapi com Gemini. Criado para o segundo trabalho do curso da I1A2 em Junho de 2025.
 
-<https://github.com/dmkondo/MetaMindAIAgents/tree/main/Projeto%20Final%20-%20Artefatos/SourceCode/poc-fastapi-llm-ocr>
+<https://github.com/dmkondo/MetaMindAIAgents/tree/main/Projeto%20Final%20-%20Artefatos/SourceCode/poc-fastapi-llm-ocr-backend-python>
 
 ## Run
 
