@@ -167,10 +167,9 @@ def agente_load(xlslist: str) -> List[str]:
         deps_type=XLSFileList,
         output_type=TableListOutput,
         system_prompt=(
-            """### PAPEL: Você é um analista de suporte especializado em receber uma lista de planilhas, avaliar seu conteúdo e criar as tabelas em SQLite com a devida carga dos dados recebidos nas mesmas. 
+            """### PAPEL: Você é um analista de suporte especializado em receber uma lista de planilhas, avaliar seu conteúdo e criar as tabelas em SQLite. 
                ### OPBJETIVO: Utilizando apenas a lista de arquivos recebida, você deverá iterar por cada planilha XLS, pegar seu conteúdo através da tool 'get_file' (enviando apenas o endereço do arquivo a ser extraído) e seguir as seguintes etapas: 
                 - Criar o script DDL em SQLite3 para criação da tabela seguindo os critérios listados abaixo e adicioná-lo na lista de script de retorno.
-                - Por cada linha apresentada na planilna, gerar o script de INSERT e adicioná-lo na lista de script de retorno.
                 - Ao processar todos os registros da planilha, retorne a lista de scripts de retorno.
                ### CRITÉRIOS PARA NOMENCLATURA DAS TABELAS E COLUNAS:
                 - O nome da tabela deverá ser o nome do arquivo seguindo os demais critérios aqui estipulados.
@@ -268,7 +267,7 @@ def agente_consulta_query() -> Agent:
             - admissao_abril: Tabela com a lista de admitidos em abril de 2025 com matrícula e data de admissão.
             - afastamentos: Tabela com a lista de colaboradores afastados com matrícula e tipo de afastamento.
             - desligados: Tabela com a lista de colaboradores desligados com matrícula, data de demissão e status de comunicado.
-            - ferias: Tabela com a lista de colaboradores em férias com matrícula e dias de férias.
+            - ferias: Tabela com a lista de colaboradores em férias com matrícula e dias corridos de férias.
             - exterior: Tabela com a lista de colaboradores que atuam no exterior.
             - base_dias_uteis: Tabela de dias úteis por sindicato.
             - base_sindicato_x_valor: Tabela de valores diários de VR por sindicato.
@@ -281,10 +280,9 @@ def agente_consulta_query() -> Agent:
               -- sindicato
               -- valor_diario_sindicato: valor apresentado conforme o estado no qual o sindicato seja referente. Relação de de-para para identificação do estado: quando o sindicato começar com "SINDPD SP" o estado será "São Paulo"; quando o sindicato começar com "SINDPPD RS" o estado será "Rio Grande do Sul"; quando o sindicato começar com "SITEPD PR" o estado será "Paraná"; quando o sindicato começar com "SINDPD RJ" o estado será "Rio de Janeiro";
               -- dias_uteis: dias uteis conforme a base estipulada pelo sindicato.
-              -- qtde_dias_ferias: sub-query que, caso o colaborador esteja de férias com retorno anterior a 15/05, calcular a diferença em dias da data de retorno das férias até o dia 15/05).
+              -- qtde_dias_ferias: sub-query que, caso o colaborador esteja de férias calcule a quantidade de dias que será descontado, podendo ser de forma integral caso tenha 30 dias de férias, ou uma quantidade proporcional de dias_uteis estipulado pelo sindicato.
               -- qtde_dias_licenca: sub-query que, caso o colaborador esteja de licença com retorno anterior a 15/05, calcular a diferença em dias da data de retorno da licença até o dia 15/05.
             - Utilize a coluna [matricula] para efetuar o relacionamento entre as tabelas.
-            - Desconsiderar os colaboradores que estão de férias.
             - Desconsiderar os colaboradores que não apresentam sindicato.
             - Desconsiderar os colaboradores que estão afastados (utilizar o campo unnamed_3 para avaliar os retornos de licença, caso o colaborador retorne de licença antes de 15/05 subtraia os dias em que estava de licença do dias_uteis).
             - Desconsiderar os colaboradores que estão no exterior.
@@ -353,12 +351,12 @@ def main():
 
 if __name__ == "__main__":
     load_dotenv()
-    # main()
-    retorno_extracao = agente_extracao(ARQUIVO_ZIP)
+    main()
 
-    lista_script_retorno = []
-    for file in retorno_extracao.filelist:
-        print(f'  Processando arquivo: {file}')
-        lista_script_retorno.append(agente_load(file))
-        time.sleep(2*60)
-    print(f'  Output from agente_load: \n{lista_script_retorno}')
+    # retorno_extracao = agente_extracao(ARQUIVO_ZIP)
+    # lista_script_retorno = []
+    # for file in retorno_extracao.filelist:
+    #     print(f'  Processando arquivo: {file}')
+    #     lista_script_retorno.append(agente_load(file))
+    #     time.sleep(2*60)
+    # print(f'  Output from agente_load: \n{lista_script_retorno}')
