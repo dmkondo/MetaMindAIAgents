@@ -58,7 +58,7 @@ http://127.0.0.1:8000/docs#/
 </div>
 
 ## Licença
-Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](../LICENSE.md).
+Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](../LICENSE).
 
 
 # poc-fastapi-llm-ocr-frontend-react
@@ -90,4 +90,4 @@ npm run start:dev
 </div>
 
 ## Licença
-Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](../LICENSE.md).
+Este projeto está licenciado nos termos da licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](../LICENSE).
