@@ -1,0 +1,2 @@
+# Treat all .docx files as binary
+*.docx binary
